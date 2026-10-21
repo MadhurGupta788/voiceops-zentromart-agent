@@ -1,4 +1,0 @@
-id,language,answerable,question,pred_decision,expected_decision,reply,include_ok,exclude_ok,decision_ok,pass
-PQ0002,hi-en,True,SKU ELE-0012 pe ZentroMart Assured hai kya? Claim kaise karein?,answer,answer,"Main ek AI assistant hoon. Mere paas SKU ELE-0012 ki details ya claim process ki koi jaankari nahi hai, isliye main iska jawab nahi de sakta.",False,True,True,False
-PQ0003,en,True,How fast are refunds to the ZentroMart Wallet?,answer,answer,"Hello, I am the ZentroMart AI assistant. I do not have access to specific refund timelines or company policies at this time. Please contact our support team for more details.",False,True,True,False
-PQ0004,en,False,Can I schedule a delivery at midnight?,answer,answer,"I am your ZentroMart AI assistant. I do not have access to specific delivery policies or schedules right now, so I cannot confirm if midnight delivery is available. Please check the available time slots during checkout for more information.",True,True,True,True
