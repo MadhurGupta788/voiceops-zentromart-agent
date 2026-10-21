@@ -8,3 +8,4 @@ data_local/
 *.wav
 *.mp3
 !sample_outputs/**
+results/.llm_cache/
