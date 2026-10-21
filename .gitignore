@@ -1,0 +1,10 @@
+.env
+.venv/
+__pycache__/
+*.pyc
+data_local/
+.chroma/
+.faiss/
+*.wav
+*.mp3
+!sample_outputs/**
