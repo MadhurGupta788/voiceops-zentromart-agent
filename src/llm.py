@@ -20,7 +20,7 @@ class LLMUnavailable(Exception):
 def _get_client():
     global _client
     if _client is None:
-        _client = genai.Client()  # reads GEMINI_API_KEY from env
+        _client = genai.Client(http_options=types.HttpOptions(timeout=60000))
     return _client
 
 
