@@ -14,3 +14,4 @@ diag_quota.py
 scan_models.py
 list_models.py
 diag_call.py
+.index/
