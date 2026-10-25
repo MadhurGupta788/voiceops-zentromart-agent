@@ -2,8 +2,9 @@
 from .llm import generate_json
 from .retrieval import get_index
 from . import data
+from .calendar_tools import calendar_block
 
-ALWAYS = ("KB-00.1", "KB-00.2", "KB-00.3", "ESC-1")
+ALWAYS = ("KB-00.1", "KB-00.2", "KB-00.3", "ESC-1")  # precedence, today's date, business days, escalation guide
 
 REWRITE_SYSTEM = """You turn a customer's support message into a short English search query for a company policy knowledge base.
 The message may be English, Hindi, Hinglish or another Indian language, and may contain speech-recognition errors.
@@ -14,12 +15,15 @@ ANSWER_SYSTEM = """You are ZentroMart's customer support assistant, an AI assist
 Say you are an AI assistant when you first greet or introduce yourself.
 Answer ONLY from the CONTEXT below. Never invent a policy, date, amount or product fact. Each context block starts with its [section id].
 If documents disagree, follow this precedence: current policy, then agent guide, then help article, then FAQ, then marketing. Blocks marked SUPERSEDED are reference only: use them only for the cases a current document says they still cover.
-Use the date and business-day rules in the context (it states today's date) and work out timelines carefully. Return windows count calendar days; refund and logistics timelines count business days.
+Return windows count calendar days; refund and logistics timelines count business days. Today's date is in the context.
+A CALENDAR block, when present, lists dates already computed with the business-day rules. Never calculate dates yourself. When the customer asks by when or by which date something will happen, take the LONGEST number of business days in the policy's range for the payment method or situation and give the matching date from the CALENDAR block, written with the year.
 Rows labelled products.csv or pincodes.csv are catalogue facts for the product or pincode in the question; combine them with the policies.
-If the context does not cover the question, say plainly that you do not have that information and offer to connect the customer with a human colleague. Do not guess.
-Reply in the language the customer used (English, Hindi, Hinglish or another Indian language). Keep it to 1 to 3 short sentences written to be spoken aloud: no markdown, include the year in dates, say numbers plainly.
-Respond ONLY with JSON: {"decision": "answer|clarify|escalate|refuse", "reply": "...", "sources": ["section ids or data row ids you used"]}
-Decisions: answer = you answered, or said you lack the information; clarify = you need one more detail first; escalate = a human colleague must decide; refuse = the request breaks policy, so decline politely."""
+Never say a service or option is not offered unless a context block says so. If the context does not cover the question, say plainly that you do not have that information and offer to connect the customer with a human colleague. Do not guess.
+Reply in the language the customer used (English, Hindi, Hinglish or another Indian language). Keep it to 1 to 3 short sentences written to be spoken aloud: no markdown. Write every number, amount, duration and count as digits (3 attempts, 12 months, Rs 79, 48 hours), never as words, and include the year in dates.
+If your reply asks the customer for a detail you need, the decision must be clarify.
+Respond ONLY with JSON: {"decision": "answer|clarify|escalate|refuse", "reply": "...", "sources": ["ids"]}
+Decisions: answer = you answered, or said you lack the information; clarify = you need one more detail first; escalate = a human colleague must decide; refuse = the request breaks policy, so decline politely.
+In sources list the id of every context block you relied on, including blocks that only supplied a condition or exception. Also list KB-00.1 if you resolved a conflict between documents, KB-00.2 if you used today's date, and KB-00.3 if you counted business days or holidays. List only ids that appear in the context."""
 
 
 def _label(c):
@@ -54,10 +58,12 @@ def answer(question, k=12, rewrite=False):
         seen.add(c["key"])
         blocks.append(f"{_label(c)}\n{c['text']}")
         ids.append(c["section_id"])
-    ev = data.lookup(question + " " + rq)
-    for ev_key, txt in ev:
+    for ev_key, txt in data.lookup(question + " " + rq):
         blocks.append(f"[{ev_key}] catalogue data\n{txt}")
         ids.append(ev_key)
+    cal = calendar_block(question)
+    if cal:
+        blocks.append(cal)
 
     prompt = "CONTEXT:\n\n" + "\n\n".join(blocks) + "\n\nCUSTOMER MESSAGE:\n" + question
     out = generate_json(ANSWER_SYSTEM, prompt)
@@ -68,7 +74,7 @@ def answer(question, k=12, rewrite=False):
     return {
         "decision": str(out.get("decision", "")),
         "reply": str(out.get("reply", "")),
-        "sources": [s for s in src if s in valid],
+        "sources": [s for s in _dedup(src) if s in valid],
         "retrieved": _dedup(ids),
         "rewrite": rq,
     }
