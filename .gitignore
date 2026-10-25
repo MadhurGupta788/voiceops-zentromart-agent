@@ -17,3 +17,5 @@ diag_call.py
 .index/
 analyze_citations.py
 patch_rag2.py
+patch_rag.py
+patch_rag2.py
