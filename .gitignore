@@ -24,4 +24,5 @@ patch_conv2.py
 patch_conv2.py
 patch_conv.py
 patch_conv2.py
-results/
+results/*backup*
+results/debug*
